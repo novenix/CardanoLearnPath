@@ -38,7 +38,7 @@ import PlutusTx.Prelude hiding (Applicative (..))
     PlutusTx.makeLift ''MyRedeemer
 -- | END STEP1  // 
 
--- | STEP 2: Define validator script
+-- | STEP 2: Define validator script (validates if the person is who they say they are)
     -- | This method is the spending validator (which gets lifted to
     --   its on-chain representation).
     -- VALIDATION SCRIPT: Takes Datum , Redeemer , Validation context, and bool to see if the transaction succeed or not
@@ -70,9 +70,9 @@ contractAddress = Scripts.validatorAddress starterInstance
 -- | STEP 5: define Schema
 -- | The schema of the contract, with two endpoints.
     -- way the user interacts with blockchain
-    type Schema =
-            Endpoint "publish" (Integer, Value) --2 valuesInteger, Value)
-            .\/ Endpoint "redeem" Integer
+    type Schema =                               --        (password to lock, # of ada)
+            Endpoint "publish" (Integer, Value) --2 values(Integer, Value)
+            .\/ Endpoint "redeem" Integer --1 value (Integer -password to unlock-)
 ---- | END STEP 5//        
  -- | STEP 6: endpoints function
     -- contract endpoint, use contract schema
