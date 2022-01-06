@@ -43,8 +43,8 @@ import PlutusTx.Prelude hiding (Applicative (..))
     --   its on-chain representation).
     -- VALIDATION SCRIPT: Takes Datum , Redeemer , Validation context, and bool to see if the transaction succeed or not
     validateSpend :: MyDatum -> MyRedeemer -> ScriptContext -> Bool
-    -- if 
-    validateSpend _myDataValue _myRedeemerValue _ = error () -- Please provide an implementation.
+    -- if reedemer is the same, unlock the ada
+    validateSpend (MyDatum myDataValue) (MyRedeemer myRedeemerValue) _ = myDataValue == myRedeemerValue
 -- | END STEP 2 // 
 
 -- | The address of the contract (the hash of its validator script).
@@ -85,19 +85,19 @@ contractAddress = Scripts.validatorAddress starterInstance
         -- | publish word is defined in schema
         publish :: AsContractError e => Promise () Schema e ()
         publish = endpoint @"publish" $ \(i, lockedFunds) -> do -- Endpoint "publish" (Integer, Value) --2 (valuesInteger -i-, Value-lockedFunds-) in shcema
-            let tx = Constraints.mustPayToTheScript (MyDatum i) lockedFunds
-            void $ submitTxConstraints starterInstance tx --send transaction to cardano's blockchain
+            let tx = Constraints.mustPayToTheScript (MyDatum i) lockedFunds -- create transaction locking adas with mustPayToTheScript(saving datum with -i password-) and sendind lockedfunds
+            void $ submitTxConstraints starterInstance tx --send transaction(tx) to cardano's blockchain
     ---- | END STEP 6.2//   
     -- | STEP 6.3: define redeem contract endpoint (Logic of smart contract)
         -- | The "redeem" contract endpoint.
         -- contract endpoint, use contract schema
         -- | redeem word is defined in schema   
         redeem :: AsContractError e => Promise () Schema e ()
-        redeem = endpoint @"redeem" $ \myRedeemerValue -> do
-            unspentOutputs <- utxosAt contractAddress
-            let redeemer = MyRedeemer myRedeemerValue
-                tx       = collectFromScript unspentOutputs redeemer
-            void $ submitTxConstraintsSpending starterInstance unspentOutputs tx --send transaction to cardano's blockchain
+        redeem = endpoint @"redeem" $ \myRedeemerValue -> do -- redeemerValue is the guess of the redeemer to get the password
+            unspentOutputs <- utxosAt contractAddress -- way to get the unspent (lock) ada inside the specific address given, give me all the lock ada at the specific address
+            let redeemer = MyRedeemer myRedeemerValue -- cast redeemer value into a redeemer datatype
+                tx       = collectFromScript unspentOutputs redeemer --create transaction, collect ada from a location with collectFromScript and the address in unspentOutputs,, we give redeemer and redeemer will be used in validation script
+            void $ submitTxConstraintsSpending starterInstance unspentOutputs tx --send transaction to cardano's blockchain and redeemer will recieve ada
     ---- | END STEP 6.3//    
     -- | STEP 6.4: define endpoints and use contract
         -- | is how plutus knows what to show to user - use contract 
